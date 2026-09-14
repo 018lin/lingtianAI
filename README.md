@@ -39,7 +39,7 @@ GLM Embedding 默认使用 `embedding-3`，DeepSeek 默认使用 `deepseek-chat`
 - 管理员输入密码后才能打开上传入口。
 - 上传接口只负责保存文件和创建任务记录。
 - 浏览器随后调用独立的处理接口，页面轮询处理状态，因此文件入库不会阻塞网站页面。
-- Word 支持 `.docx`，Excel 支持 `.xlsx`。
+- Word 支持 `.doc`、`.docx`，Excel 支持 `.xls`、`.xlsx`。
 - 文档处理会将文本切块，调用 GLM Embedding 写入 pgvector。
 - 问答时先检索相关文本，再将上下文交给 DeepSeek，并在答案下方显示来源。
 

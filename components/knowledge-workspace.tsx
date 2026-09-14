@@ -64,8 +64,8 @@ function statusLabel(status: DocumentRecord["status"]) {
   }[status];
 }
 
-function FileIcon({ type }: { type: "docx" | "xlsx" }) {
-  return type === "xlsx" ? <FileSpreadsheet size={17} /> : <FileText size={17} />;
+function FileIcon({ type }: { type: "doc" | "docx" | "xls" | "xlsx" }) {
+  return type === "xls" || type === "xlsx" ? <FileSpreadsheet size={17} /> : <FileText size={17} />;
 }
 
 function SourceList({ sources }: { sources: SourceCitation[] }) {
@@ -246,10 +246,10 @@ export function KnowledgeWorkspace() {
   async function uploadFiles(files: FileList | File[]) {
     if (!isAdmin || uploading) return;
     const selectedFiles = Array.from(files);
-    const validFiles = selectedFiles.filter((file) => /\.(docx|xlsx)$/i.test(file.name));
+    const validFiles = selectedFiles.filter((file) => /\.(doc|docx|xls|xlsx)$/i.test(file.name));
 
     if (!validFiles.length) {
-      setUploadError("请选择 .docx 或 .xlsx 文件。");
+      setUploadError("请选择 .doc、.docx、.xls 或 .xlsx 文件。");
       return;
     }
 
@@ -549,13 +549,13 @@ export function KnowledgeWorkspace() {
               </div>
               <div>
                 <strong>拖拽文件到这里，或点击上传</strong>
-                <span>支持 .docx、.xlsx，单个文件不超过 25 MB</span>
+                <span>支持 .doc、.docx、.xls、.xlsx，单个文件不超过 25 MB</span>
               </div>
               <Plus size={20} className="dropzone-plus" />
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".docx,.xlsx"
+                accept=".doc,.docx,.xls,.xlsx"
                 multiple
                 hidden
                 onChange={(event) => {
@@ -604,7 +604,7 @@ export function KnowledgeWorkspace() {
                 documents.map((document) => (
                   <div className="document-row" key={document.id}>
                     <div className="document-name">
-                      <div className={document.file_type === "xlsx" ? "file-icon excel" : "file-icon word"}>
+                      <div className={document.file_type === "xls" || document.file_type === "xlsx" ? "file-icon excel" : "file-icon word"}>
                         <FileIcon type={document.file_type} />
                       </div>
                       <div>

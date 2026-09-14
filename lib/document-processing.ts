@@ -1,5 +1,6 @@
 import mammoth from "mammoth";
-import readXlsxFile from "read-excel-file/node";
+import WordExtractor from "word-extractor";
+import * as XLSX from "xlsx";
 import { createEmbedding } from "@/lib/embeddings";
 import { chunkParagraphs, chunkSpreadsheetRows, type TextChunk } from "@/lib/chunking";
 import { getStorageBucket, getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -20,6 +21,19 @@ async function parseDocx(buffer: Buffer, fileName: string): Promise<ProcessedDoc
     chunks: chunkParagraphs(paragraphs, {
       fileName,
       fileType: "docx"
+    })
+  };
+}
+
+async function parseDoc(buffer: Buffer, fileName: string): Promise<ProcessedDocument> {
+  const extractor = new WordExtractor();
+  const document = await extractor.extract(buffer);
+  const paragraphs = document.getBody().split(/\n+/);
+
+  return {
+    chunks: chunkParagraphs(paragraphs, {
+      fileName,
+      fileType: "doc"
     })
   };
 }
@@ -52,14 +66,24 @@ function formatCell(value: unknown) {
   return String(value ?? "").trim();
 }
 
-async function parseXlsx(buffer: Buffer, fileName: string): Promise<ProcessedDocument> {
-  const sheets = await readXlsxFile(buffer);
+async function parseSpreadsheet(buffer: Buffer, fileName: string, fileType: "xls" | "xlsx"): Promise<ProcessedDocument> {
+  const workbook = XLSX.read(buffer, {
+    cellDates: true,
+    type: "buffer"
+  });
   const chunks: TextChunk[] = [];
 
-  for (const sheet of sheets) {
-    const sheetName = sheet.sheet;
+  for (const sheetName of workbook.SheetNames) {
+    const worksheet = workbook.Sheets[sheetName];
+    if (!worksheet) continue;
+
+    const sheetRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
+      blankrows: false,
+      defval: "",
+      header: 1,
+      raw: false
+    });
     const rows: string[] = [];
-    const sheetRows = sheet.data;
     const headers = (sheetRows[0] || []).map((value, index) => {
       return formatCell(value) || `列${index + 1}`;
     });
@@ -84,7 +108,7 @@ async function parseXlsx(buffer: Buffer, fileName: string): Promise<ProcessedDoc
     chunks.push(
       ...chunkSpreadsheetRows(rows, {
         fileName,
-        fileType: "xlsx",
+        fileType,
         sheetName
       })
     );
@@ -96,15 +120,19 @@ async function parseXlsx(buffer: Buffer, fileName: string): Promise<ProcessedDoc
 async function parseDocument(buffer: Buffer, fileName: string) {
   const extension = getExtension(fileName);
 
+  if (extension === "doc") {
+    return parseDoc(buffer, fileName);
+  }
+
   if (extension === "docx") {
     return parseDocx(buffer, fileName);
   }
 
-  if (extension === "xlsx") {
-    return parseXlsx(buffer, fileName);
+  if (extension === "xls" || extension === "xlsx") {
+    return parseSpreadsheet(buffer, fileName, extension);
   }
 
-  throw new Error("当前只支持 .docx 和 .xlsx 文件。");
+  throw new Error("当前只支持 .doc、.docx、.xls 和 .xlsx 文件。");
 }
 
 export async function processStoredDocument(documentId: string) {

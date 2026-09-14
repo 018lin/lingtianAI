@@ -3,7 +3,7 @@ export type DocumentStatus = "pending" | "processing" | "completed" | "failed";
 export type DocumentRecord = {
   id: string;
   name: string;
-  file_type: "docx" | "xlsx";
+  file_type: "doc" | "docx" | "xls" | "xlsx";
   storage_path: string;
   size_bytes: number;
   status: DocumentStatus;

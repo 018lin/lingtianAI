@@ -6,7 +6,7 @@ create extension if not exists vector;
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  file_type text not null check (file_type in ('docx', 'xlsx')),
+  file_type text not null check (file_type in ('doc', 'docx', 'xls', 'xlsx')),
   storage_path text not null unique,
   size_bytes bigint not null default 0,
   status text not null default 'pending'
@@ -26,9 +26,15 @@ create table if not exists public.document_chunks (
   created_at timestamptz not null default now()
 );
 
-create index if not exists document_chunks_embedding_idx
-  on public.document_chunks
-  using hnsw (embedding vector_cosine_ops);
+alter table public.documents
+  drop constraint if exists documents_file_type_check;
+
+alter table public.documents
+  add constraint documents_file_type_check
+  check (file_type in ('doc', 'docx', 'xls', 'xlsx'));
+
+-- GLM embedding-3 returns 2048 dimensions. pgvector's HNSW index for vector
+-- columns supports at most 2000 dimensions, so this version uses exact search.
 
 create index if not exists document_chunks_document_id_idx
   on public.document_chunks(document_id);
@@ -80,6 +86,8 @@ for each row execute function public.set_updated_at();
 insert into storage.buckets (id, name, public)
 values ('knowledge-files', 'knowledge-files', false)
 on conflict (id) do nothing;
+
+notify pgrst, 'reload schema';
 
 -- The app uses the server-side service role for storage and database operations.
 -- No public storage policy is needed for the first version.

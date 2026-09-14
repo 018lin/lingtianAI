@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/admin";
 import { getStorageBucket, getSupabaseAdmin } from "@/lib/supabase-admin";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const allowedExtensions = new Set(["docx", "xlsx"]);
+const allowedExtensions = new Set(["doc", "docx", "xls", "xlsx"]);
 
 function getExtension(fileName: string) {
   return fileName.toLowerCase().split(".").pop() || "";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const extension = getExtension(file.name);
 
     if (!allowedExtensions.has(extension)) {
-      return NextResponse.json({ error: "只支持 .docx 和 .xlsx 文件。" }, { status: 400 });
+      return NextResponse.json({ error: "只支持 .doc、.docx、.xls 和 .xlsx 文件。" }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE) {
