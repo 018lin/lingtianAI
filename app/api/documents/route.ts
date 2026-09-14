@@ -9,10 +9,6 @@ function getExtension(fileName: string) {
   return fileName.toLowerCase().split(".").pop() || "";
 }
 
-function safeFileName(fileName: string) {
-  return fileName.replace(/[^\w.\-\u4e00-\u9fff ]/g, "_").trim() || "未命名文件";
-}
-
 export async function GET() {
   try {
     await requireAdmin();
@@ -56,7 +52,7 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdmin();
     const documentId = crypto.randomUUID();
-    const storagePath = `${documentId}/${safeFileName(file.name)}`;
+    const storagePath = `${documentId}/source.${extension}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
